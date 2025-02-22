@@ -1,0 +1,33 @@
+ansible-vault create secrets.yml
+
+ansible-vault encrypt secrets.yml
+
+
+########################################################################
+
+---
+- name: Deploy Application
+  hosts: web
+  become: yes
+  vars_files:
+    - secrets.yml
+  tasks:
+    - name: Show Secret
+      debug:
+        msg: "Database password is {{ db_password }}"
+
+
+####################################################################################
+ansible-playbook deploy.yml --ask-vault-pass
+
+ansible-vault edit secrets.yml
+
+
+ansible-vault decrypt secrets.yml
+
+
+
+echo "MySecretPassword" > vault-password.txt
+chmod 600 vault-password.txt
+
+ansible-playbook deploy.yml --vault-password-file vault-password.txt
