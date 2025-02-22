@@ -1,0 +1,15 @@
+galaxy_info:
+  author: Arun
+  description: Ansible role to install and configure Apache
+  license: OSS
+  min_ansible_version: "2.9"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - all
+  galaxy_tags:
+    - web
+    - apache
+dependencies: []
+#  - role: common
+#  - role: firewall

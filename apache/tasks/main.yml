@@ -1,0 +1,20 @@
+
+# tasks file for apache
+---
+- name: Install Apache
+  apt:
+    name: "{{ apache_package }}"
+    state: present
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: Copy Apache configuration
+  template:
+    src: apache.conf.j2
+    dest: /etc/apache2/apache2.conf
+  notify: Restart Apache
+
+- name: Start and Enable Apache
+  service:
+    name: "{{ apache_service }}"
+    state: started
+    enabled: yes

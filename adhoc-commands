@@ -1,0 +1,27 @@
+ansible all -m ping -i inventory.ini
+
+
+ansible all -m shell -a "uptime"
+
+ansible web -m apt -a "name=apache2 state=present" -b
+
+
+ansible all -m user -a "name=arun state=present"
+
+ansible all -m user -a "name=arun state=absent"
+
+ansible all -m service -a "name=apache2 state=started"
+
+ansible all -m service -a "name=nginx state=restarted"
+
+ansible all -m service -a "name=mysql state=stopped"
+
+ansible all -m file -a "path=/opt/mydir state=directory mode=0755"
+
+ansible all -m file -a "path=/opt/mydir state=absent"
+
+ansible all -m copy -a "src=/home/arun/index.html dest=/var/www/html/index.html mode=0644"
+
+ansible all -m apt -a "name=nginx state=present"
+
+ansible all -m command -a "df -h"

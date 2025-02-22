@@ -1,0 +1,22 @@
+pip install molecule[docker] ansible-lint
+
+
+molecule init role apache --driver-name docker
+
+
+molecule test
+
+#################################################
+molecule/default/verify.yml
+---
+- name: Verify Apache is Running
+  hosts: all
+  tasks:
+    - name: Check if Apache is running
+      command: systemctl status apache2
+      register: apache_status
+      changed_when: false
+      failed_when: apache_status.rc != 0
+
+
+molecule verify

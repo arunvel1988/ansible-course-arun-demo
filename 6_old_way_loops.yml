@@ -1,0 +1,22 @@
+- name: Install multiple packages
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - apache2
+    - curl
+    - git
+
+
+---
+
+- name: Create multiple users
+  user:
+    name: "{{ item.name }}"
+    state: present
+  loop:
+    - { name: "alice" }
+    - { name: "bob" }
+
+---
+

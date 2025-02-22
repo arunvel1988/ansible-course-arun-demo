@@ -1,0 +1,207 @@
+#docker build -t ansible-controller .
+#docker run -it --name ansible-controller --network ansible-net ansible-controller bash
+
+docker network create ansible-net
+
+# Create two Ubuntu containers as managed nodes
+docker run -dit --name node1 --network ansible-net ubuntu:20.04
+docker run -dit --name node2 --network ansible-net ubuntu:20.04
+
+
+Controller node exec
+
+docker exec -it ansible-controller bash
+
+managed node
+
+docker exec -it node1 bash
+apt-get update && apt-get install -y openssh-server
+service ssh start
+passwd  # Set a password for the root user
+exit
+
+
+cd /ansible
+vi inventory.ini
+[my_nodes]
+node1 ansible_host=node1 ansible_user=root 
+node2 ansible_host=node2 ansible_user=root
+
+
+
+ansible -i inventory.ini my_nodes -m ping
+
+ansible-playbook -i inventory.ini play.yml
+
+#######################################################################################
+# playbook.yml
+---
+- name: Install Apache on all nodes
+  hosts: my_nodes
+  tasks:
+    - name: Install Apache
+      apt:
+        name: apache2
+        state: present
+###########################################################################################
+
+- name: Update all packages on nodes
+  hosts: my_nodes
+  tasks:
+    - name: Update apt cache and upgrade packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+###########################################################################################
+
+- name: Create a user named 'ansibleuser'
+  hosts: my_nodes
+  tasks:
+    - name: Add ansibleuser
+      user:
+        name: ansibleuser
+        state: present
+        groups: sudo
+        shell: /bin/bash
+        
+###########################################################################################
+
+- name: Create a user named 'ansibleuser' with a password
+  hosts: my_nodes
+  tasks:
+    - name: Add ansibleuser with a password
+      user:
+        name: ansibleuser
+        password: "{{ 'password123' | password_hash('sha512') }}"
+        state: present
+        groups: sudo
+        shell: /bin/bash
+
+###########################################################################################
+
+###########################################################################################
+
+- name: Copy a sample file to all nodes
+  hosts: my_nodes
+  tasks:
+    - name: Copy index.html
+      copy:
+        src: /home/ansible/index.html
+        dest: /var/www/html/index.html
+###########################################################################################
+
+- name: Ensure Apache is started and enabled
+  hosts: my_nodes
+  tasks:
+    - name: Start and enable Apache
+      service:
+        name: apache2
+        state: started
+        enabled: yes
+
+###########################################################################################
+
+- name: Install Docker on all nodes
+  hosts: my_nodes
+  tasks:
+    - name: Install required packages
+      apt:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - software-properties-common
+
+    - name: Add Docker GPG key
+      shell: curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+
+    - name: Add Docker repository
+      shell: add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+
+    - name: Install Docker CE
+      apt:
+        name: docker-ce
+        state: present
+###########################################################################################
+
+- name: Check disk usage and print warning if usage exceeds 80%
+  hosts: my_nodes
+  tasks:
+    - name: Check disk usage
+      command: df -h /
+      register: disk_usage
+
+    - name: Print disk usage
+      debug:
+        msg: "{{ disk_usage.stdout_lines }}"
+
+###########################################################################################
+
+- name: Reboot all nodes
+  hosts: my_nodes
+  tasks:
+    - name: Reboot the machine
+      reboot:
+        reboot_timeout: 300
+###########################################################################################
+- name: Install Python packages
+  hosts: my_nodes
+  tasks:
+    - name: Install Flask and Requests
+      pip:
+        name:
+          - flask
+          - requests
+###########################################################################################
+
+
+---
+- name: Install Apache and Deploy Custom index.html
+  hosts: my_nodes
+  tasks:
+    - name: Install Apache
+      apt:
+        name: apache2
+        state: present
+        update_cache: yes
+
+    - name: Copy custom index.html
+      copy:
+        src: ./index.html   # Replace with the actual path on your Ansible control node
+        dest: /var/www/html/index.html
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Ensure Apache is running and enabled
+      service:
+        name: apache2
+        state: started
+        enabled: yes
+
+
+###########################################################################################
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N ""
+
+on worker nodes
+vi /etc/ssh/sshd_config
+PermitRootLogin yes
+
+
+
+ssh-copy-id -i ~/.ssh/id_rsa.pub root@node1
+ssh-copy-id -i ~/.ssh/id_rsa.pub root@node2
+
+
+
+docker commit node1 ubuntu-apache-with-app
+
+
+docker stop node1
+docker rm node1
+
+
+docker run -d --name node1 -p 8081:80 ubuntu-apache-with-app
+

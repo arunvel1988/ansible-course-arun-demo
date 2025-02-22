@@ -1,0 +1,4 @@
+- name: Test Apache Role
+  hosts: localhost
+  roles:
+    - apache

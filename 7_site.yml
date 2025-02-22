@@ -1,0 +1,9 @@
+- name: Configure Apache Web Server
+  hosts: web
+  become: yes
+  roles:
+    - apache
+
+
+
+#ansible-playbook -i inventory site.yml
